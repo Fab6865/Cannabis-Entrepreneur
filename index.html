@@ -1,0 +1,768 @@
+<html><head><base href="https://cannabisentrepreneur.com" />
+<title>Cannabis Entrepreneur</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #1e3c2b;
+    color: #e0e0e0;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  #game {
+    max-width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  #header {
+    background-color: #2c5d3f;
+    padding: 10px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  #stats {
+    display: flex;
+    justify-content: space-around;
+    background-color: #1e3c2b;
+    padding: 10px;
+    font-size: 14px;
+  }
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .section {
+    background-color: #2c5d3f;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  h2 {
+    margin-top: 0;
+    color: #90ee90;
+  }
+  #grow-area, #buyers {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  .plant, .buyer {
+    width: 80px;
+    height: 100px;
+    background-color: #4a2511;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  .plant:hover, .buyer:hover {
+    background-color: #6b3816;
+  }
+  .locked {
+    background-color: #808080;
+    cursor: not-allowed;
+  }
+  button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  button:disabled {
+    background-color: #808080;
+    cursor: not-allowed;
+  }
+  #modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-content {
+    background-color: #2c5d3f;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 5px;
+  }
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .close:hover,
+  .close:focus {
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  #stock-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  #stock-list li {
+    margin-bottom: 5px;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="header">Cannabis Entrepreneur</div>
+  
+  <div id="stats">
+    <div>Argent: $<span id="money">1000</span></div>
+    <div>Expérience: <span id="xp">0</span></div>
+    <div>Niveau: <span id="level">1</span></div>
+  </div>
+  
+  <div id="main">
+    <div class="section">
+      <h2>Culture</h2>
+      <div id="grow-area"></div>
+      <button onclick="addWaterToAll()">Arroser toutes les plantes (💧: <span id="water-count">10</span>)</button>
+      <button onclick="addFertilizerToAll()">Fertiliser toutes les plantes (🌱: <span id="fertilizer-count">5</span>)</button>
+      <button onclick="harvestAll()">Récolter toutes les plantes prêtes</button>
+    </div>
+    
+    <div class="section">
+      <h2>Vente</h2>
+      <div>Stock total: <span id="total-stock">0</span>g</div>
+      <ul id="stock-list"></ul>
+      <div>Ouvrier: <span id="worker-status">Inactif</span> (Temps restant: <span id="worker-timer">0:00</span>)</div>
+    </div>
+    
+    <div class="section">
+      <h2>Acheteurs</h2>
+      <div id="buyers"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Bourse</h2>
+      <div>Actions: <span id="shares">0</span></div>
+      <div>Prix de l'action: $<span id="share-price">10</span></div>
+      <button onclick="buyShare()">Acheter une action</button>
+      <button onclick="sellShare()">Vendre une action</button>
+    </div>
+    
+    <div class="section">
+      <h2>Boosters actifs</h2>
+      <div id="boosters"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Inventaire et Boutique</h2>
+      <button onclick="openInventory()">Ouvrir l'inventaire</button>
+      <button onclick="openShop()">Ouvrir la boutique</button>
+    </div>
+    
+    <div class="section">
+      <h2>Sauvegarde et Chargement</h2>
+      <button onclick="saveGame()">Sauvegarder la partie</button>
+      <button onclick="loadGame()">Charger la partie</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+let money = 1000;
+let xp = 0;
+let level = 1;
+let stock = {
+  'OG Kush': 0,
+  'Sour Diesel': 0,
+  'Blue Dream': 0,
+  'Girl Scout Cookies': 0,
+  'Northern Lights': 0
+};
+let shares = 0;
+let sharePrice = 10;
+let inventory = {
+  fertilizer: 5,
+  water: 10,
+  pesticide: 0,
+  growLights: 0
+};
+
+let boosters = {
+  growthSpeed: { active: false, endTime: 0 },
+  doubleYield: { active: false, endTime: 0 }
+};
+
+let worker = {
+  active: false,
+  endTime: 0
+};
+
+const plantTypes = [
+  {name: 'OG Kush', emoji: '🍁', thc: 20, cbd: 1, price: 50, growTime: 120},
+  {name: 'Sour Diesel', emoji: '🌿', thc: 22, cbd: 0.5, price: 60, growTime: 150},
+  {name: 'Blue Dream', emoji: '☘️', thc: 18, cbd: 2, price: 55, growTime: 130},
+  {name: 'Girl Scout Cookies', emoji: '🍀', thc: 24, cbd: 0.7, price: 65, growTime: 160},
+  {name: 'Northern Lights', emoji: '🌱', thc: 19, cbd: 1.5, price: 58, growTime: 140}
+];
+
+let plants = [null, null, null, null, null, null, null, null, null, null];
+let unlockedPots = 5;
+
+const buyers = [
+  {name: "Bob le Hippie", emoji: "🧑‍🦰", quantity: 5, strain: 'OG Kush', price: 300, xp: 3},
+  {name: "Alice la Festivalière", emoji: "👱‍♀️", quantity: 10, strain: 'Sour Diesel', price: 600, xp: 6},
+  {name: "Charlie le Musicien", emoji: "🎸", quantity: 15, strain: 'Blue Dream', price: 900, xp: 9},
+  {name: "David le Médecin", emoji: "👨‍⚕️", quantity: 20, strain: 'Girl Scout Cookies', price: 1200, xp: 12},
+  {name: "Eva l'Artiste", emoji: "👩‍🎨", quantity: 25, strain: 'Northern Lights', price: 1500, xp: 15}
+];
+
+function updateDisplay() {
+  document.getElementById('money').textContent = money;
+  document.getElementById('xp').textContent = xp;
+  document.getElementById('level').textContent = level;
+  document.getElementById('total-stock').textContent = Object.values(stock).reduce((a, b) => a + b, 0);
+  document.getElementById('shares').textContent = shares;
+  document.getElementById('share-price').textContent = sharePrice;
+  document.getElementById('water-count').textContent = inventory.water;
+  document.getElementById('fertilizer-count').textContent = inventory.fertilizer;
+  document.getElementById('worker-status').textContent = worker.active ? 'Actif' : 'Inactif';
+  document.getElementById('worker-timer').textContent = worker.active ? formatTime(Math.max(0, Math.floor((worker.endTime - Date.now()) / 1000))) : '0:00';
+  
+  let stockList = document.getElementById('stock-list');
+  stockList.innerHTML = '';
+  for (let [strain, amount] of Object.entries(stock)) {
+    let li = document.createElement('li');
+    li.textContent = `${strain}: ${amount}g`;
+    stockList.appendChild(li);
+  }
+  
+  let growArea = document.getElementById('grow-area');
+  growArea.innerHTML = '';
+  plants.forEach((plant, index) => {
+    let plantDiv = document.createElement('div');
+    plantDiv.className = 'plant';
+    if (plant) {
+      plantDiv.innerHTML = `
+        <div>${plant.type.emoji}</div>
+        <div>${plant.type.name}</div>
+        <div>${plant.ready ? 'Prêt!' : formatTime(plant.timer)}</div>
+      `;
+      plantDiv.title = `THC: ${plant.type.thc}%\nCBD: ${plant.type.cbd}%\nCroissance: ${plant.growth}%`;
+    } else if (index >= unlockedPots) {
+      plantDiv.textContent = '🔒';
+      plantDiv.title = 'Déverrouillé au niveau 20';
+      plantDiv.classList.add('locked');
+    } else {
+      plantDiv.textContent = '🕳️';
+      plantDiv.title = 'Cliquez pour planter';
+    }
+    plantDiv.onclick = () => plantOrHarvest(index);
+    growArea.appendChild(plantDiv);
+  });
+
+  let buyersArea = document.getElementById('buyers');
+  buyersArea.innerHTML = '';
+  buyers.forEach((buyer, index) => {
+    let buyerDiv = document.createElement('div');
+    buyerDiv.className = 'buyer';
+    buyerDiv.innerHTML = `
+      <div>${buyer.emoji} ${buyer.name}</div>
+      <div>${buyer.quantity}g ${buyer.strain}</div>
+      <div>$${buyer.price}</div>
+    `;
+    buyerDiv.onclick = () => sellToBuyer(index);
+    buyersArea.appendChild(buyerDiv);
+  });
+
+  let boostersArea = document.getElementById('boosters');
+  boostersArea.innerHTML = '';
+  for (let [boosterName, booster] of Object.entries(boosters)) {
+    if (booster.active) {
+      let boosterDiv = document.createElement('div');
+      boosterDiv.className = 'booster';
+      let remainingTime = Math.max(0, Math.floor((booster.endTime - Date.now()) / 1000));
+      boosterDiv.textContent = `${boosterName}: ${formatTime(remainingTime)}`;
+      boostersArea.appendChild(boosterDiv);
+    }
+  }
+}
+
+function formatTime(seconds) {
+  let minutes = Math.floor(seconds / 60);
+  let remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
+
+function plantOrHarvest(index) {
+  if (index >= unlockedPots) {
+    alert("Ce pot est verrouillé jusqu'au niveau 20!");
+    return;
+  }
+  if (!plants[index]) {
+    openPlantSelectionModal(index);
+  } else if (plants[index].ready) {
+    harvest(index);
+  } else if (!plants[index].water || !plants[index].fertilizer) {
+    openCareModal(index);
+  } else {
+    alert(`${plants[index].type.name} pousse. Temps restant : ${formatTime(plants[index].timer)}`);
+  }
+}
+
+function openPlantSelectionModal(index) {
+  let content = `
+    <h2>Choisissez une plante à cultiver</h2>
+    <div class="plant-selection">
+      ${plantTypes.map(plant => `
+        <div class="plant-option" onclick="plantSeed(${index}, '${plant.name}')">
+          <div>${plant.emoji} ${plant.name}</div>
+          <div>THC: ${plant.thc}% | CBD: ${plant.cbd}%</div>
+          <div>Prix: $${plant.price}</div>
+          <div>Temps de croissance: ${formatTime(plant.growTime)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  openModal(content);
+}
+
+function plantSeed(index, plantName) {
+  let selectedPlant = plantTypes.find(p => p.name === plantName);
+  if (money >= selectedPlant.price) {
+    money -= selectedPlant.price;
+    plants[index] = {
+      type: selectedPlant,
+      growth: 0,
+      ready: false,
+      water: false,
+      fertilizer: false,
+      timer: null
+    };
+    xp += 10;
+    updateDisplay();
+    closeModal();
+  } else {
+    alert("Pas assez d'argent!");
+  }
+}
+
+function openCareModal(index) {
+  let plant = plants[index];
+  let content = `
+    <h2>Soins pour ${plant.type.name}</h2>
+    ${!plant.water ? `<button onclick="addWater(${index})">Ajouter de l'eau (Stock:${inventory.water})</button>` : ''}
+    ${!plant.fertilizer ? `<button onclick="addFertilizer(${index})">Ajouter de l'engrais (Stock: ${inventory.fertilizer})</button>` : ''}
+  `;
+  openModal(content);
+}
+
+function addWater(index) {
+  if (inventory.water > 0) {
+    inventory.water--;
+    plants[index].water = true;
+    checkAndStartGrowth(index);
+    closeModal();
+    updateDisplay();
+  } else {
+    alert("Pas assez d'eau!");
+  }
+}
+
+function addFertilizer(index) {
+  if (inventory.fertilizer > 0) {
+    inventory.fertilizer--;
+    plants[index].fertilizer = true;
+    checkAndStartGrowth(index);
+    closeModal();
+    updateDisplay();
+  } else {
+    alert("Pas assez d'engrais!");
+  }
+}
+
+function checkAndStartGrowth(index) {
+  let plant = plants[index];
+  if (plant.water && plant.fertilizer && plant.timer === null) {
+    plant.timer = boosters.growthSpeed.active ? Math.floor(plant.type.growTime / 2) : plant.type.growTime;
+    growPlant(index);
+  }
+}
+
+function growPlant(index) {
+  let growthInterval = setInterval(() => {
+    if (plants[index] && plants[index].timer > 0) {
+      plants[index].timer--;
+      plants[index].growth = 100 - Math.floor((plants[index].timer / plants[index].type.growTime) * 100);
+      if (plants[index].timer === 0) {
+        clearInterval(growthInterval);
+        plants[index].ready = true;
+      }
+      updateDisplay();
+    } else {
+      clearInterval(growthInterval);
+    }
+  }, 1000);
+}
+
+function harvest(index) {
+  let yield = Math.floor(Math.random() * 5) + 8;
+  if (boosters.doubleYield.active) {
+    yield *= 2;
+  }
+  stock[plants[index].type.name] += yield;
+  xp += 20;
+  alert(`Vous avez récolté ${yield}g de ${plants[index].type.name}!`);
+  plants[index] = null;
+  updateDisplay();
+}
+
+function harvestAll() {
+  let totalYield = 0;
+  plants.forEach((plant, index) => {
+    if (plant && plant.ready) {
+      let yield = Math.floor(Math.random() * 5) + 8;
+      if (boosters.doubleYield.active) {
+        yield *= 2;
+      }
+      totalYield += yield;
+      stock[plant.type.name] += yield;
+      xp += 20;
+      plants[index] = null;
+    }
+  });
+  if (totalYield > 0) {
+    alert(`Vous avez récolté un total de ${totalYield}g!`);
+  } else {
+    alert("Aucune plante n'est prête à être récoltée.");
+  }
+  updateDisplay();
+}
+
+function sellToBuyer(index) {
+  let buyer = buyers[index];
+  if (stock[buyer.strain] >= buyer.quantity) {
+    stock[buyer.strain] -= buyer.quantity;
+    money += buyer.price;
+    xp += buyer.xp;
+    alert(`Vendu ${buyer.quantity}g de ${buyer.strain} à ${buyer.name} pour $${buyer.price}!`);
+    updateDisplay();
+  } else {
+    alert(`Pas assez de ${buyer.strain}! Il vous faut ${buyer.quantity}g.`);
+  }
+}
+
+function buyShare() {
+  if (money >= sharePrice) {
+    money -= sharePrice;
+    shares++;
+    xp += 2;
+    updateSharePrice();
+    updateDisplay();
+  } else {
+    alert("Pas assez d'argent!");
+  }
+}
+
+function sellShare() {
+  if (shares > 0) {
+    shares--;
+    money += sharePrice;
+    xp += 2;
+    updateSharePrice();
+    updateDisplay();
+  } else {
+    alert("Pas d'actions à vendre!");
+  }
+}
+
+function updateSharePrice() {
+  sharePrice = Math.max(1, Math.floor(sharePrice + (Math.random() - 0.5) * 5));
+}
+
+function checkLevelUp() {
+  if (xp >= level * 100) {
+    level++;
+    alert("Niveau supérieur atteint!");
+    if (level === 20) {
+      alert("Vous avez débloqué la possibilité d'acheter 5 nouveaux pots de culture! Chaque pot coûte $50000.");
+    }
+  }
+}
+
+function openInventory() {
+  let content = `
+    <h2>Inventaire</h2>
+    <ul>
+      <li>Eau: ${inventory.water}</li>
+      <li>Engrais: ${inventory.fertilizer}</li>
+      <li>Pesticide: ${inventory.pesticide}</li>
+      <li>Lampes de croissance: ${inventory.growLights}</li>
+    </ul>
+    <h3>Stock de cannabis:</h3>
+    <ul>
+      ${Object.entries(stock).map(([strain, amount]) => `<li>${strain}: ${amount}g</li>`).join('')}
+    </ul>
+  `;
+  openModal(content);
+}
+
+function openShop() {
+  let content = `
+    <h2>Boutique</h2>
+    <button onclick="buyItem('water')">Acheter Eau ($10)</button>
+    <button onclick="buyItem('fertilizer')">Acheter Engrais ($50)</button>
+    <button onclick="buyItem('pesticide')">Acheter Pesticide ($75)</button>
+    <button onclick="buyItem('growLights')">Acheter Lampe de croissance ($200)</button>
+    <button onclick="buyBooster('growthSpeed')">Booster de croissance rapide ($100)</button>
+    <button onclick="buyBooster('doubleYield')">Booster de récolte double ($150)</button>
+    <button onclick="hireWorker()">Embaucher un ouvrier pour 5 minutes ($200)</button>
+    ${level >= 20 ? `<button onclick="unlockPot()">Déverrouiller un pot ($50000)</button>` : ''}
+  `;
+  openModal(content);
+}
+
+function buyItem(item) {
+  let price;
+  switch(item) {
+    case 'water':
+      price = 10;
+      break;
+    case 'fertilizer':
+      price = 50;
+      break;
+    case 'pesticide':
+      price = 75;
+      break;
+    case 'growLights':
+      price = 200;
+      break;
+  }
+  
+  if (money >= price) {
+    money -= price;
+    inventory[item]++;
+    updateDisplay();
+    openShop();
+  } else {
+    alert("Pas assez d'argent!");
+  }
+}
+
+function buyBooster(boosterType) {
+  let price = boosterType === 'growthSpeed' ? 100 : 150;
+  if (money >= price) {
+    money -= price;
+    boosters[boosterType].active = true;
+    boosters[boosterType].endTime = Date.now() + 5 * 60 * 1000;
+    updateDisplay();
+    openShop();
+    setTimeout(() => {
+      boosters[boosterType].active = false;
+      alert(`Le booster ${boosterType === 'growthSpeed' ? 'de croissance rapide' : 'de récolte double'} a expiré!`);
+      updateDisplay();
+    }, 5 * 60 * 1000);
+  } else {
+    alert("Pas assez d'argent!");
+  }
+}
+
+function hireWorker() {
+  if (money >= 200) {
+    money -= 200;
+    worker.active = true;
+    worker.endTime = Date.now() + 5 * 60 * 1000;
+    updateDisplay();
+    openShop();
+    workerSell();
+    setTimeout(() => {
+      worker.active = false;
+      alert("L'ouvrier a terminé son travail!");
+      updateDisplay();
+    }, 5 * 60 * 1000);
+  } else {
+    alert("Pas assez d'argent!");
+  }
+}
+
+function workerSell() {
+  if (worker.active) {
+    let availableBuyers = buyers.filter(buyer => stock[buyer.strain] >= buyer.quantity);
+    if (availableBuyers.length > 0) {
+      let randomBuyer = availableBuyers[Math.floor(Math.random() * availableBuyers.length)];
+      stock[randomBuyer.strain] -= randomBuyer.quantity;
+      money += randomBuyer.price;
+      xp += randomBuyer.xp;
+      console.log(`L'ouvrier a vendu ${randomBuyer.quantity}g de ${randomBuyer.strain} à ${randomBuyer.name} pour $${randomBuyer.price}`);
+    }
+    updateDisplay();
+    if (Date.now() < worker.endTime) {
+      setTimeout(workerSell, 10000);
+    }
+  }
+}
+
+function unlockPot() {
+  if (level >= 20 && money >= 50000) {
+    if (unlockedPots < plants.length) {
+      money -= 50000;
+      unlockedPots++;
+      alert("Vous avez déverrouillé un nouveau pot de culture!");
+      updateDisplay();
+    } else {
+      alert("Tous les pots sont déjà déverrouillés!");
+    }
+  } else {
+    alert("Vous n'avez pas le niveau ou l'argent nécessaire pour déverrouiller un pot!");
+  }
+}
+
+function addWaterToAll() {
+  if (inventory.water >= plants.filter(p => p && !p.water).length) {
+    plants.forEach((plant, index) => {
+      if (plant && !plant.water) {
+        inventory.water--;
+        plant.water = true;
+        checkAndStartGrowth(index);
+      }
+    });
+    updateDisplay();
+  } else {
+    alert("Pas assez d'eau pour toutes les plantes!");
+  }
+}
+
+function addFertilizerToAll() {
+  if (inventory.fertilizer >= plants.filter(p => p && !p.fertilizer).length) {
+    plants.forEach((plant, index) => {
+      if (plant && !plant.fertilizer) {
+        inventory.fertilizer--;
+        plant.fertilizer = true;
+        checkAndStartGrowth(index);
+      }
+    });
+    updateDisplay();
+  } else {
+    alert("Pas assez d'engrais pour toutes les plantes!");
+  }
+}
+
+function saveGame() {
+  const gameState = {
+    money,
+    xp,
+    level,
+    stock,
+    shares,
+    sharePrice,
+    inventory,
+    boosters,
+    worker,
+    plants,
+    unlockedPots
+  };
+  localStorage.setItem('cannabisEntrepreneurSave', JSON.stringify(gameState));
+  alert("Partie sauvegardée avec succès!");
+}
+
+function loadGame() {
+  const savedState = localStorage.getItem('cannabisEntrepreneurSave');
+  if (savedState) {
+    const gameState = JSON.parse(savedState);
+    money = gameState.money;
+    xp = gameState.xp;
+    level = gameState.level;
+    stock = gameState.stock;
+    shares = gameState.shares;
+    sharePrice = gameState.sharePrice;
+    inventory = gameState.inventory;
+    boosters = gameState.boosters;
+    worker = gameState.worker;
+    plants = gameState.plants;
+    unlockedPots = gameState.unlockedPots;
+    updateDisplay();
+    alert("Partie chargée avec succès!");
+  } else {
+    alert("Aucune sauvegarde trouvée!");
+  }
+}
+
+function openModal(content) {
+  document.getElementById('modal-content').innerHTML = content;
+  document.getElementById('modal').style.display = "block";
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = "none";
+}
+
+// Get the modal
+var modal = document.getElementById('modal');
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = closeModal;
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    closeModal();
+  }
+}
+
+setInterval(() => {
+  updateSharePrice();
+  checkLevelUp();
+  updateDisplay();
+}, 10000);
+
+// Start the game loop
+setInterval(() => {
+  plants.forEach((plant, index) => {
+    if (plant && plant.timer > 0) {
+      plant.timer--;
+      if (plant.timer === 0) {
+        plant.ready = true;
+      }
+    }
+  });
+  updateDisplay();
+}, 1000);
+
+// Initialize the game
+updateDisplay();
+</script>
+</body>
+</html>
